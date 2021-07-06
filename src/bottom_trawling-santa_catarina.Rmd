@@ -19,6 +19,7 @@ library(plotly)
 **Data source:** UNIVALI/EMCT/LEMA. Estatística Pesqueira de Santa Catarina. Consulta On-line. Projeto de Monitoramento da Atividade Pesqueira do Estado de Santa Catarina. Laboratório de Estudos Marinhos Aplicados (LEMA), da Escola do Mar, Ciência e Tecnologia (EMCT) da Universidade do Vale do Itajaí (UNIVALI). 2020. Disponível em: http://pmap-sc.acad.univali.br/. Acesso em: 01/07/2021.
 
 
+
 **NOTE:** The data on industrial fishing in Santa Catarina for the years 2013, 2014, and **2015** are partial (do not represent the entire production of the state for any type of fishing or species, and may also contain errors)
 
 
