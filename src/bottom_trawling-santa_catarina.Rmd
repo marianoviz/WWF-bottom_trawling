@@ -1,0 +1,151 @@
+---
+title: "Idustrial bottom trawling: state of Santa Catarina, Brazil (2009-2019)"
+author: "Mariano Viz"
+date: "01/07/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(plotly)
+
+```
+
+**Data source:** UNIVALI/EMCT/LEMA. Estatística Pesqueira de Santa Catarina. Consulta On-line. Projeto de Monitoramento da Atividade Pesqueira do Estado de Santa Catarina. Laboratório de Estudos Marinhos Aplicados (LEMA), da Escola do Mar, Ciência e Tecnologia (EMCT) da Universidade do Vale do Itajaí (UNIVALI). 2020. Disponível em: http://pmap-sc.acad.univali.br/. Acesso em: 01/07/2021.
+
+
+**NOTE:** The data on industrial fishing in Santa Catarina for the years 2013, 2014, and **2015** are partial (do not represent the entire production of the state for any type of fishing or species, and may also contain errors)
+
+
+```{r}
+#Read in data and update the column names to lower snake case:
+sc_trawl <- read_csv(here("data", "relatorio30_17.csv")) %>% #NOTE: There was a problem reading the original CSV. I had to convert the file to CSV UTF-8 to be able to read it.
+  clean_names()
+
+```
+
+### Data wrangling and exploratory visualization
+
+
+```{r}
+#Data wrangling:
+sc_trawl_clean <- sc_trawl %>% 
+  mutate(kg_no_periodo = str_replace(kg_no_periodo, pattern = ",.*", replacement = "")) %>% #remove ,00
+  mutate(kg_no_periodo = kg_no_periodo %>% str_remove_all("\\.")) %>% #remove .
+  mutate(kg_no_periodo = as.numeric(kg_no_periodo)) #convert to class numeric
+  
+sc_trawl_year <- sc_trawl_clean %>% 
+  group_by(ano, aparelho_de_pesca) %>% 
+  summarise(kg_no_periodo = sum(kg_no_periodo))
+
+sc_trawl_landings <- sc_trawl_clean %>% 
+  group_by(ano, aparelho_de_pesca) %>% 
+  summarise(no_de_descargas_do_periodo = sum(no_de_descargas_do_periodo))
+
+sc_trawl_municipio <- sc_trawl_clean %>% 
+  group_by(ano, municipio) %>% 
+  summarise(kg_no_periodo = sum(kg_no_periodo)) %>% 
+  filter(municipio != "Florianópolis") %>% #exclude Florianópolis (only data for 2009 and 2009)
+  rename(Municipality = municipio)
+
+sc_trawl_municipio1 <- sc_trawl_clean %>% 
+  group_by(ano, municipio) %>% 
+  summarise(no_de_descargas_do_periodo = sum(no_de_descargas_do_periodo)) %>% 
+  filter(municipio != "Florianópolis") %>% #exclude Florianópolis (only data for 2009 and 2009)
+  rename(Municipality = municipio)
+
+sc_trawl_fish <- sc_trawl_clean %>% 
+  group_by(ano, pescado) %>% 
+  summarise(kg_no_periodo = sum(kg_no_periodo)) %>% 
+  rename(Species = pescado)
+
+
+
+```
+
+
+
+```{r}
+
+ggplot(sc_trawl_year, aes(x = ano, y = kg_no_periodo))+
+  geom_col() +
+  facet_wrap(~aparelho_de_pesca) +
+  scale_y_continuous(labels = scales::label_number_si())+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019))+
+  theme_minimal()+
+  labs(x = "Year",
+       y = "Production (kg)",
+       title = "Fishing Gear: Production (kg)")+
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+```{r}
+
+ggplot(sc_trawl_landings, aes(x = ano, y = no_de_descargas_do_periodo))+
+  geom_col() +
+  facet_wrap(~aparelho_de_pesca) +
+  scale_y_continuous(labels = scales::label_number_si())+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019))+
+  theme_minimal()+
+  labs(x = "Year",
+       y = "Number of landings",
+       title = "Fishing Gear: Landings")+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+
+
+```{r}
+
+muni_plot <- ggplot(sc_trawl_municipio, aes(x= ano, y = kg_no_periodo))+
+  geom_line(aes(color= Municipality)) +
+  scale_y_continuous(labels = scales::label_number_si())+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019))+
+  theme_minimal()+
+  labs(x = "Year",
+       y = "Production (kg)",
+       title = "Municipality: Production (kg)")+
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(muni_plot)
+
+
+muni_plot1 <- ggplot(sc_trawl_municipio1, aes(x= ano, y = no_de_descargas_do_periodo))+
+  geom_line(aes(color= Municipality)) +
+  scale_y_continuous(labels = scales::label_number_si())+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019))+
+  theme_minimal()+
+  labs(x = "Year",
+       y = "Number of landings",
+       title = "Municipality: Landings")+
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(muni_plot1)
+
+
+```
+
+
+
+```{r}
+
+fish_plot <- ggplot(sc_trawl_fish, aes(x= ano, y = kg_no_periodo))+
+  geom_line(aes(color= Species)) +
+  scale_y_continuous(labels = scales::label_number_si())+
+  scale_x_continuous(breaks=c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019))+
+  theme_minimal()+
+  labs(x = "Year",
+       y = "Production (kg)",
+       title = "Fish species: Production (kg)")+
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(fish_plot)
+```
+
+**NOTE:** double click on a species to isolate the data.
+
+
